@@ -1,0 +1,493 @@
+local Players = game:GetService("Players")
+local lp = Players.LocalPlayer
+local mouse = lp:GetMouse()
+local uis = game:GetService("UserInputService")
+local rservice = game:GetService("RunService")
+local cam = workspace.CurrentCamera
+local NormalGravity = game.Workspace.Gravity
+ 
+local Raw = getrawmetatable(game)
+local Caller = checkcaller or is_protosmasher_caller or Cer.isCerus
+local CallingScript = getcallingscript or get_calling_script
+local Closure = newcclosure or read_me or function(Func) return Func end
+local CallingMethod = getnamecallmethod or get_namecall_method
+setreadonly(Raw,false)
+local NewIndex = Raw.__newindex;
+Raw.__newindex = Closure(function(self,Property,Value)
+	if Caller() then return NewIndex(self,Property,Value) end
+	if Property == "WalkSpeed" then return 16 end
+	if Property == "JumpPower" then return 50 end 
+	if Property == "HipHeight" then return 0 end 
+	if self == workspace and Property == "Gravity" then return NormalGravity end
+	if Property == "CFrame" and self:IsDescendantOf(lp.Character) then return end 
+	return NewIndex(self,Property,Value)
+end)
+local Namecall = Raw.__namecall;
+Raw.__namecall = Closure(function(self,...)
+local Args = {...}
+	if Caller() then 
+		if CallingMethod() == "FindFirstChild" and Args[1] == "HumanoidRootPart" then 
+			Args[1] = "HumanoidRootPart" 
+			return Namecall(self,unpack(Args))
+		end
+		return Namecall(self,...) 
+	end 
+	if CallingMethod() == "Destroy" or CallingMethod() == "Kick" then 
+		if self == lp then return wait(9e9) end
+		if tostring(self) == 'BodyGyro' or tostring(self) == 'BodyVelocity' then return wait(9e9) end 
+	end
+	if CallingMethod() == "BreakJoints" and self == lp.Character then return wait(9e9) end
+	return Namecall(self,...)
+end)
+setreadonly(Raw,true)
+ 
+ 
+function getClosestToMouse()
+	local closestdis = math.huge
+	local closestplr
+	for i,v in pairs(Players:GetPlayers()) do
+		if v:DistanceFromCharacter(mouse.Hit.p) < closestdis and v ~= lp and v.Character and v.Character:FindFirstChild("Head") then
+			closestplr = v
+			closestdis = v:DistanceFromCharacter(mouse.Hit.p)
+		end
+	end
+	if not closestplr then return lp end
+	return closestplr
+end
+ 
+function selp(player)
+    local bbg = Instance.new("BillboardGui",game.CoreGui)
+    bbg.Name = player.Name
+    bbg.AlwaysOnTop = true
+    bbg.Enabled = true
+    bbg.Size = UDim2.new(1,0,1,0)
+    bbg.StudsOffset = Vector3.new(0,2,0)
+    local tlabel = Instance.new("TextLabel",bbg)
+    tlabel.BackgroundTransparency = 1
+    tlabel.Size = UDim2.new(1,0,1,0)
+    tlabel.Text = player.Name
+    tlabel.TextColor3 = Color3.new(255,125,0)
+end
+ 
+function findplayer(args, tf)
+    local Targoot
+    if tf then
+        for _,v in next, game.Players:GetPlayers() do
+            if v.DisplayName:lower():sub(1,#args) == args:lower() then
+                Targoot = v
+            end
+        end
+    else
+        for _,v in next, game.Players:GetPlayers() do
+            if v.Name:lower():sub(1,#args) == args:lower() then
+                Targoot = v
+            end
+        end
+    end
+    return Targoot
+end
+ 
+local Prefix = ";"
+ 
+local screengui = Instance.new("ScreenGui",game.CoreGui)
+local frame = Instance.new("Frame",screengui)
+local cmdBar = Instance.new("TextBox",frame)
+frame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+frame.BorderSizePixel = 2
+frame.Position = UDim2.new(0, -4000, 0, mouse.ViewSizeY / 2)
+frame.Size = UDim2.new(0, 200, 0, 20)
+cmdBar.BackgroundTransparency = 1.000
+cmdBar.Size = UDim2.new(0, 200, 0, 20)
+cmdBar.TextColor3 = Color3.fromRGB(255, 255, 255)
+cmdBar.TextSize = 16
+cmdBar.TextXAlignment = Enum.TextXAlignment.Left
+ 
+function notify(text)
+    local screengui = Instance.new("ScreenGui", game.CoreGui)
+    local NOTIF = Instance.new("TextLabel", screengui)
+    NOTIF.Position = UDim2.new(0, -500, 0.5, 0)
+    NOTIF:TweenPosition(UDim2.new(0, 0, 0.5, 0), "Out", "Linear", 0.2, false)
+    NOTIF.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    NOTIF.BorderColor3 = Color3.fromRGB(255, 255, 255)
+    NOTIF.Size = UDim2.new(1, 0, 0, 40)
+    NOTIF.Font = Enum.Font.SourceSans
+    NOTIF.Text = text
+    NOTIF.TextColor3 = Color3.fromRGB(255, 255, 255)
+    NOTIF.TextSize = 25
+    game.Debris:AddItem(screengui, 2.3)
+end
+ 
+local akey = Enum.KeyCode.Q
+local keyss = false
+local silentaim = false
+local camlock = true
+local prediction = 5
+local shiftdown = false
+local altering = false
+local recording = false
+local as = false
+local ar = true
+local day = false
+local night = false
+ 
+local sg = Instance.new("ScreenGui",game.CoreGui)
+local button = Instance.new("TextButton",sg)
+button.Position = UDim2.new(1,-200,0.5,-25)
+button.Text = tostring(akey)
+button.Size = UDim2.new(0,200,0,50)
+ 
+uis.InputBegan:Connect(function(key)
+    if key.KeyCode == Enum.KeyCode.LeftShift then
+        shiftdown = true
+    end
+    if key.KeyCode == Enum.KeyCode.LeftAlt then
+        altering = true
+    end
+    if key.KeyCode == Enum.KeyCode.R then
+        if lp.Character and lp.Character:FindFirstChildOfClass("Tool") then
+            game.ReplicatedStorage.MainRemote:FireServer("Reload")
+        end
+    end
+    if recording == false and key ~= nil then
+        if key.KeyCode == akey then
+            keyss = true
+            plr = getClosestToMouse()
+        end
+    end
+    if key ~= nil and recording then
+        akey = key.KeyCode
+        button.Text = tostring(key.KeyCode)
+        recording = false
+    end
+end)
+uis.InputEnded:Connect(function(key)
+    if key.KeyCode == Enum.KeyCode.LeftShift then
+        shiftdown = false
+    end
+    if key.KeyCode == Enum.KeyCode.LeftAlt then
+        altering = false
+    end
+    if recording == false and key ~= nil then
+        if key.KeyCode == akey then
+            keyss = false
+            plr = nil
+        end
+    end
+end)
+ 
+button.MouseButton1Click:Connect(function()
+    recording = true
+    button.Text = "..."
+end)
+ 
+mouse.KeyDown:Connect(function(key)
+    if key == "p" then
+        if lp.Character then
+            lp.Character:Destroy()
+        end
+    end
+    if key == Prefix then
+        frame:TweenPosition(UDim2.new(0, 0, 0.5, 0), 1, 0, 0.3, 1)
+    	cmdBar:CaptureFocus()
+    end
+end)
+ 
+mouse.Button1Down:Connect(function()
+    if altering then
+        if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+            local partt = Instance.new("Part", lp.Character)
+            partt.Anchored = true
+            partt.CanCollide = false
+            partt.Size = Vector3.new(2,2,1)
+            partt.Transparency = 1
+            partt.CFrame = mouse.Hit + Vector3.new(0,3.5,0)
+            game.Debris:AddItem(partt, 0.05)
+            local weld = Instance.new("Weld", partt)
+            weld.Part0 = partt
+            weld.Part1 = lp.Character:FindFirstChild("HumanoidRootPart")
+        end
+    end
+end)
+ 
+cmdBar.FocusLost:Connect(function()
+    frame:TweenPosition(UDim2.new(0, -500, 0.5, 0), 1, 0, 1, 1)
+    local args = string.split(cmdBar.Text, " ")
+    if args[1] == Prefix .. "prefix" then
+        if args[2] and args[2] ~= "" and args[2] ~= " " and #args[2] == 1 and args[2] ~= "/" or args[2] ~= "." then
+            Prefix = args[2]
+            notify("Prefix " .. args[2])
+        else
+            notify("Need Second Argument, Cannot Put '/', '.' As Prefix")
+        end
+    end
+    if args[1] == Prefix .. "cmds" or args[1] == Prefix .. "commands" then
+        cmds()
+        notify("Printed CMDS In Console")
+    end
+    if args[1] == Prefix .. "l" or args[1] == Prefix .. "lock" then
+        if args[2] and args[2] ~= "" and args[2] ~= " " then
+            if args[2] == "display" and args[3] and args[3] ~= "" and args[3] ~= " " then
+                lockedplr = findplayer(args[3], true)
+            else
+                lockedplr = findplayer(args[2], false)
+            end
+        end
+    end
+    if args[1] == Prefix .. "ul" or args[1] == "unlock" then
+        lockedplr = nil
+    end
+ 
+    if args[1] == Prefix .. "s" or args[1] == Prefix .. "silent" or args[1] == Prefix .. "silentaim" then
+        silentaim = true
+        camlock = false
+        notify("SilentAim true")
+    end
+    if args[1] == Prefix .. "c" or args[1] == Prefix .. "cam" or args[1] == Prefix .. "camlock" then
+        silentaim = false
+        camlock = true
+        notify("Camlock true")
+    end
+    if args[1] == Prefix .. "av" or args[1] == Prefix .. "aimvelocity" then
+        if args[2] and tonumber(args[2]) and tonumber(args[2]) <= 10 and tonumber(args[2]) >= 1 then
+            prediction = tonumber(args[2])
+            notify("AimVelocity " .. tonumber(args[2]))
+        end
+    end
+    if args[1] == Prefix .. "esp" then
+        if args[2] and args[2] ~= "" and args[2] ~= " " then
+            if args[2] == "all" then
+                for _, v in next, game.Players:GetPlayers() do
+                    if v ~= lp then
+                        selp(v)
+                    end
+                end
+            else
+                for _, v in next, game.Players:GetPlayers() do
+                    if v.Name:lower():sub(1, #args[2]) == args[2]:lower() then
+                        selp(v)
+                        notify("Esp'd " .. v.Name)
+                    end
+                end
+            end
+        end
+    end
+    if args[1] == Prefix .. "unesp" then
+        if args[2] and args[2] ~= "" and args[2] ~= " " then
+            if args[2] == "all" then
+                for _, v in next, game.CoreGui:GetChildren() do
+                    for _,z in next, game.Players:GetPlayers() do
+                        if v.Name == z.Name then
+                            v:Destroy()
+                        end
+                    end
+                end
+            else
+                for _, v in next, game.CoreGui:GetChildren() do
+                    if v.Name:lower():sub(1, #args[2]) == args[2]:lower() then
+                        v:Destroy()
+                        notify("Unesp'd " .. v.Name)
+                    end
+                end
+            end
+        end
+    end
+    if args[1] == Prefix .. "fov" then
+        if args[2] and tonumber(args[2]) and tonumber(args[2]) <= 120 and tonumber(args[2]) >= 10 then
+            notify("FieldOfView " .. tonumber(args[2]))
+            cam.FieldOfView = tonumber(args[2])
+        else
+            notify("FieldOfView 70")
+            cam.FieldOfView = 70
+        end
+    end
+    if args[1] == Prefix .. "as" or args[1] == Prefix .. "astomp" then
+        as = not as
+        notify("Auto-Stomp " .. tostring(as))
+    end
+    if args[1] == Prefix .. "ar" or args[1] == Prefix .. "areset" then
+        ar = not ar
+        notify("Auto-Reset " .. tostring(ar))
+    end
+    if args[1] == Prefix .. "day" then
+        day = true
+        night = false
+    end
+    if args[1] == Prefix .. "night" then
+        day = false
+        night = true
+    end
+    if args[1] == Prefix .. "goto" then
+        if args[2] and args[2] ~= "" and args[2] ~= " " then
+            if args[2] == "display" and args[3] and args[3] ~= "" and args[3] ~= " " then
+                local plr = findplayer(args[3], true)
+                if lp.Character and lp.Character:FindFirstChildOfClass("Humanoid") and plr.Character and plr.Character:FindFirstChildOfClass("Humanoid") then
+                    local pt = Instance.new("Part", workspace)
+                    game.Debris:AddItem(pt, 0.1)
+                    pt.Transparency = 1
+                    pt.CanCollide = false
+                    pt.Anchored = true
+                    pt.CFrame = plr.Character:FindFirstChild("HumanoidRootPart").CFrame
+                    local ww = Instance.new("Weld", pt)
+                    ww.Part0 = pt
+                    ww.Part1 = lp.Character:FindFirstChild("HumanoidRootPart")
+                end
+            else
+                local plr = findplayer(args[2], false)
+                if lp.Character and lp.Character:FindFirstChildOfClass("Humanoid") and plr.Character and plr.Character:FindFirstChildOfClass("Humanoid") then
+                    local pt = Instance.new("Part", workspace)
+                    game.Debris:AddItem(pt, 0.1)
+                    pt.Transparency = 1
+                    pt.CanCollide = false
+                    pt.Anchored = true
+                    pt.CFrame = plr.Character:FindFirstChild("HumanoidRootPart").CFrame
+                    local ww = Instance.new("Weld", pt)
+                    ww.Part0 = pt
+                    ww.Part1 = lp.Character:FindFirstChild("HumanoidRootPart")
+                end
+            end
+        end
+    end
+    if args[1] == Prefix .. "tp" or args[1] == Prefix .. "to" then
+        if args[2] == "1" or args[2] == "f" or args[2] == "food" then
+            local part = Instance.new("Part", workspace)
+            part.Anchored = true
+            part.CanCollide = false
+            part.CFrame = CFrame.new(-2256.73486, 404.5466, -954.518616)
+            part.Transparency = 1
+            game.Debris:AddItem(part, 1)
+ 
+            local weld = Instance.new("Weld", part)
+            weld.Part0 = part
+ 
+            weld.Part1 = lp.Character.HumanoidRootPart
+            wait(0.1)
+            weld.Part1 = nil
+        elseif args[2] == "2" or args[2] == "gs" or args[2] == "gunstore" then
+            local part = Instance.new("Part", workspace)
+            part.Anchored = true
+            part.CanCollide = false
+            part.CFrame = CFrame.new(-2489.80322, 388.863983, -1396.18481)
+            part.Transparency = 1
+            game.Debris:AddItem(part, 1)
+ 
+            local weld = Instance.new("Weld", part)
+            weld.Part0 = part
+ 
+            weld.Part1 = lp.Character.HumanoidRootPart
+            wait(0.1)
+            weld.Part1 = nil
+        elseif args[2] == "3" or args[2] == "b" or args[2] == "bank" then
+            local part = Instance.new("Part", workspace)
+            part.Anchored = true
+            part.CanCollide = false
+            part.CFrame = CFrame.new(-2334.15527, 402.614258, -946.768127)
+            part.Transparency = 1
+            game.Debris:AddItem(part, 1)
+ 
+            local weld = Instance.new("Weld", part)
+            weld.Part0 = part
+ 
+            weld.Part1 = lp.Character.HumanoidRootPart
+            wait(0.1)
+            weld.Part1 = nil
+        elseif args[2] == "4" or args[2] == "rpg" then
+            local part = Instance.new("Part", workspace)
+            part.Anchored = true
+            part.CanCollide = false
+            part.CFrame = CFrame.new(-1820.03491, 354.114227, -935.422668)
+            part.Transparency = 1
+            game.Debris:AddItem(part, 1)
+ 
+            local weld = Instance.new("Weld", part)
+            weld.Part0 = part
+ 
+            weld.Part1 = lp.Character.HumanoidRootPart
+            wait(0.1)
+            weld.Part1 = nil
+        elseif args[2] == "5" or args[2] == "ft" or args[2] == "flamethrower" then
+            local part = Instance.new("Part", workspace)
+            part.Anchored = true
+            part.CanCollide = false
+            part.CFrame = CFrame.new(-2077.3833, 434.674774, -747.421631)
+            part.Transparency = 1
+            game.Debris:AddItem(part, 1)
+ 
+            local weld = Instance.new("Weld", part)
+            weld.Part0 = part
+ 
+            weld.Part1 = lp.Character.HumanoidRootPart
+            wait(0.1)
+            weld.Part1 = nil
+        end
+    end
+end)
+ 
+game.Players.PlayerRemoving:Connect(function(plrr)
+    for _,z in pairs(game.CoreGui:GetChildren()) do
+        if z:IsA'BillboardGui' then
+            if z.Name == plrr.Name then
+                z:Destroy()
+            end
+        end
+    end
+end)
+ 
+spawn(function()
+    rservice.Stepped:Connect(function()
+        if lockedplr and game.Players:FindFirstChild(lockedplr.Name) then
+            if keyss and silentaim then
+                game.ReplicatedStorage.MainRemote:FireServer("MousePos", lockedplr.Character:FindFirstChild("Head").Position + lockedplr.Character:FindFirstChild("Head").Velocity / prediction + lockedplr.Character:FindFirstChild("Head").RotVelocity / 5, "P")
+            elseif keyss and camlock then
+                cam.CFrame = CFrame.new(cam.CFrame.p, lockedplr.Character:FindFirstChild("Head").Position + lockedplr.Character:FindFirstChild("Head").Velocity / prediction + lockedplr.Character:FindFirstChild("Head").RotVelocity / 5)
+            end
+        else
+            if keyss and silentaim then
+                game.ReplicatedStorage.MainRemote:FireServer("MousePos", plr.Character:FindFirstChild("Head").Position + plr.Character:FindFirstChild("Head").Velocity / prediction + plr.Character:FindFirstChild("Head").RotVelocity / 5, "P")
+            elseif keyss and camlock then
+                cam.CFrame = CFrame.new(cam.CFrame.p, plr.Character:FindFirstChild("Head").Position + plr.Character:FindFirstChild("Head").Velocity / prediction + plr.Character:FindFirstChild("Head").RotVelocity / 5)
+            end
+        end
+    end)
+end)
+rservice.RenderStepped:Connect(function()
+    if lp.Character and lp.Character:FindFirstChildOfClass("Humanoid") then
+        if shiftdown then
+            lp.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = 21
+        else
+            lp.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = 16
+        end
+        if ar then
+            if lp.Character and lp.Character:FindFirstChild("I_LOADED_I") and lp.Character:FindFirstChild("I_LOADED_I")['K.O'].Value == true then
+                if lp.Character then
+                    lp.Character:Destroy()
+                end
+            end
+        end
+    end
+    for _,z in pairs(game.Players:GetPlayers()) do
+        for _,v in pairs(game.CoreGui:GetChildren()) do
+            if z.Name == v.Name then
+                if z.Character and z.Character:FindFirstChildOfClass("Humanoid") and z.Character:FindFirstChild("Head") then
+                    v.Adornee = z.Character:FindFirstChild("Head")
+		        else
+		            v.Adornee = nil
+                end
+            end
+        end
+    end
+end)
+ 
+game:GetService("Lighting").Changed:Connect(function()
+    if day then
+        game:GetService("Lighting").ClockTime = 14
+    elseif night then
+        game:GetService("Lighting").ClockTime = 0
+    end
+end)
+game:GetService("Lighting").GlobalShadows = false
+game:GetService("Lighting").ShadowSoftness = 0
+game:GetService("Lighting").Brightness = 1
+game:GetService("Lighting").FogEnd = 9e9
+game:GetService("Lighting").FogStart = 9e9
+lp.PlayerGui.Chat.Frame.ChatChannelParentFrame.Visible = true
+lp.PlayerGui.Chat.Frame.ChatBarParentFrame.Position = lp.PlayerGui.Chat.Frame.ChatChannelParentFrame.Position + UDim2.new(UDim.new(), lp.PlayerGui.Chat.Frame.ChatChannelParentFrame.Size.Y)
